@@ -8,6 +8,7 @@ using System.Web.Http.Hosting;
 using InventorySystem.Models;
 using InventorySystem.Services;
 using Newtonsoft.Json;
+using SignalR;
 
 namespace InventorySystem.Controllers
 {
@@ -41,21 +42,24 @@ namespace InventorySystem.Controllers
             var products = _productRepository.GetProductByLabel(id);
 
             CheckRequestIsNotNull();
-            return products.ToList().Count == 0 ? Request.CreateResponse(HttpStatusCode.NotFound, "The item could not be found.") : Request.CreateResponse(HttpStatusCode.OK, products);
-        }
 
+            var response = products.ToList().Count == 0 ? Request.CreateResponse(HttpStatusCode.NotFound, "The item could not be found.") : Request.CreateResponse(HttpStatusCode.OK, products);
+            
+            return response;
+        }
 
         // POST api/products
         public HttpResponseMessage Post(HttpRequestMessage productsMsg)
         {
             HttpContent requestContent = productsMsg.Content;
             string jsonContent = requestContent.ReadAsStringAsync().Result;
-            IEnumerable<Product> products = JsonConvert.DeserializeObject<IEnumerable<Product>>(jsonContent);
 
+            IEnumerable<Product> products = JsonConvert.DeserializeObject<IEnumerable<Product>>(jsonContent);
             var result = _productRepository.SaveProduct(products);
             CheckRequestIsNotNull();
-
-            return result ? Request.CreateResponse(HttpStatusCode.Created, products) : Request.CreateResponse(HttpStatusCode.InternalServerError, string.Format("Product {0} could not be added.", productsMsg));
+            var resultMsg = result ? Request.CreateResponse(HttpStatusCode.Created, products) : Request.CreateResponse(HttpStatusCode.InternalServerError, string.Format("Product {0} could not be added.", productsMsg));
+            
+            return resultMsg;
         }
 
         // PUT api/products/milk
@@ -104,7 +108,7 @@ namespace InventorySystem.Controllers
 
             return response;
         }
-
+        
         private void CheckRequestIsNotNull()
         {
             if (Request == null)

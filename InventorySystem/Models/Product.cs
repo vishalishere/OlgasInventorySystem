@@ -1,4 +1,6 @@
 ﻿using System;
+using InventorySystem.Controllers;
+using Microsoft.AspNet.SignalR;
 
 namespace InventorySystem.Models
 {

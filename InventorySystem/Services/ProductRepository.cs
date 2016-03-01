@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Http;
+using System.Timers;
 using System.Web;
 using InventorySystem.Models;
-using Newtonsoft.Json;
+using Microsoft.AspNet.SignalR;
 
 namespace InventorySystem.Services
 {
@@ -12,12 +12,18 @@ namespace InventorySystem.Services
     {
         public HttpContext Ctx;
         public string CacheKey = "ProductStore";
+        private readonly Timer _timer = new Timer();
+        private readonly double _secondsInADay = 86400;
 
         public ProductRepository(HttpContext ctx, bool rememberState)
         {
             Ctx = ctx;
             if (Ctx != null)
             {
+                _timer.Elapsed += SendMessage;
+                _timer.Interval = _secondsInADay;
+                _timer.Start();
+
                 if (Ctx.Cache[CacheKey] == null || !rememberState)
                 {
                     var products = new[]
@@ -134,9 +140,28 @@ namespace InventorySystem.Services
             throw new Exception("In memory data object not found");
         }
 
+        private void SendMessage(object source, ElapsedEventArgs args)
+        {
+            var expiredItems = GetAllExpired();
+            foreach (var item in expiredItems)
+            {
+                var message = string.Format("Item with label {0} expired.", item.Label);
+                GlobalHost
+                    .ConnectionManager
+                    .GetHubContext<NotificationHub>().Clients.All.sendMessage(message);
+            }
+        }
+
         public Product[] GetAllData()
         {
             return (Product[])Ctx.Cache[CacheKey];
+        }
+
+        private IEnumerable<Product> GetAllExpired()
+        {
+            var allData = GetAllData();
+            var expired = allData.Where(d => DateTime.Parse(d.Expiration) < DateTime.Now);
+            return expired;
         }
 
     }
