@@ -1,10 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.IO;
 using System.Linq;
 using System.Web;
 using InventorySystem.Models;
 using InventorySystem.Services;
+using Microsoft.AspNet.SignalR;
+using Microsoft.AspNet.SignalR.Hubs;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace InventorySystem.Tests.DataRepository
@@ -68,6 +71,12 @@ namespace InventorySystem.Tests.DataRepository
             productRepository.UpdateProduct("milk", _updateTo);
             var dataAfterUpdate = productRepository.GetAllData();
             Assert.IsTrue(dataAfterUpdate.Any(x => x.Equals(_updateTo)));
+        }
+
+        [TestMethod]
+        public void Notifications()
+        {
+            //use moq to checks whether clients are recieving the notifications
         }
 
         private static ProductRepository GetProductRepository()

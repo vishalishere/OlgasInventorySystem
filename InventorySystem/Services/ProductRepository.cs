@@ -14,6 +14,7 @@ namespace InventorySystem.Services
         public string CacheKey = "ProductStore";
         private readonly Timer _timer = new Timer();
         private readonly double _secondsInADay = 86400;
+        List<string> msgsSent = new List<string>(); 
 
         public ProductRepository(HttpContext ctx, bool rememberState)
         {
@@ -143,9 +144,11 @@ namespace InventorySystem.Services
         private void SendMessage(object source, ElapsedEventArgs args)
         {
             var expiredItems = GetAllExpired();
+
             foreach (var item in expiredItems)
             {
                 var message = string.Format("Item with label {0} expired.", item.Label);
+                msgsSent.Add(message);
                 GlobalHost
                     .ConnectionManager
                     .GetHubContext<NotificationHub>().Clients.All.sendMessage(message);
