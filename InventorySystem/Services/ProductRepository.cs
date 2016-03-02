@@ -105,6 +105,15 @@ namespace InventorySystem.Services
                     var currentData = ((Product[])Ctx.Cache[CacheKey]).ToList();
                     currentData.RemoveAll(product => string.Equals(product.Label, label, StringComparison.CurrentCultureIgnoreCase));
                     Ctx.Cache[CacheKey] = currentData.ToArray();
+
+                    var message = string.Format("Item with label {0} has been deleted.", label);
+                    //if the message has not been sent yet for that item, send it
+                    if (!msgsSent.Any(m => m == message))
+                    {
+                        msgsSent.Add(message);
+                        GlobalHost.ConnectionManager.GetHubContext<NotificationHub>().Clients.All.sendMessage(message);
+                    }
+
                     return true;
                 }
                 catch (Exception ex)
