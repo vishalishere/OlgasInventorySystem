@@ -11,5 +11,6 @@ namespace InventorySystem.Services
         IEnumerable<Product> GetProductByLabel(string label);
         bool RemoveProduct(string label);
         bool UpdateProduct(string label, Product updateTo);
+        List<string> GetAllMsgsSent();
     }
 }

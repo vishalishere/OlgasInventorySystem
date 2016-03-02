@@ -13,20 +13,21 @@ namespace InventorySystem.Services
         public HttpContext Ctx;
         public string CacheKey = "ProductStore";
         private readonly Timer _timer = new Timer();
-        private readonly double _secondsInADay = 86400;
-        List<string> msgsSent = new List<string>(); 
+        private readonly double howOftenToCheck = 10;
+        public List<string> msgsSent = new List<string>();
+        readonly NotificationHub _hub = new NotificationHub();
 
         public ProductRepository(HttpContext ctx, bool rememberState)
         {
             Ctx = ctx;
             if (Ctx != null)
             {
-                _timer.Elapsed += SendMessage;
-                _timer.Interval = _secondsInADay;
-                _timer.Start();
-
                 if (Ctx.Cache[CacheKey] == null || !rememberState)
                 {
+                    _timer.Elapsed += ChecksProductsForExpiration;
+                    _timer.Interval = howOftenToCheck;
+                    _timer.Start();
+
                     var products = new[]
                     {
                         new Product("Milk", "Drink", new DateTime(2017, 11, 5)),
@@ -141,17 +142,24 @@ namespace InventorySystem.Services
             throw new Exception("In memory data object not found");
         }
 
-        private void SendMessage(object source, ElapsedEventArgs args)
+        public List<string> GetAllMsgsSent()
+        {
+            return msgsSent;
+        }
+
+        private void ChecksProductsForExpiration(object source, ElapsedEventArgs args)
         {
             var expiredItems = GetAllExpired();
 
             foreach (var item in expiredItems)
             {
                 var message = string.Format("Item with label {0} expired.", item.Label);
-                msgsSent.Add(message);
-                GlobalHost
-                    .ConnectionManager
-                    .GetHubContext<NotificationHub>().Clients.All.sendMessage(message);
+                //if the message has not been sent yet for that item, send it
+                if (!msgsSent.Any(m => m == message))
+                {
+                    msgsSent.Add(message);
+                    GlobalHost.ConnectionManager.GetHubContext<NotificationHub>().Clients.All.sendMessage(message);
+                }
             }
         }
 
@@ -163,7 +171,7 @@ namespace InventorySystem.Services
         private IEnumerable<Product> GetAllExpired()
         {
             var allData = GetAllData();
-            var expired = allData.Where(d => DateTime.Parse(d.Expiration) < DateTime.Now);
+            var expired = allData == null ? new List<Product>() : allData.Where(d => DateTime.Parse(d.Expiration) < DateTime.Now);
             return expired;
         }
 

@@ -47,5 +47,10 @@ namespace InventorySystem.Tests
             }
             return true;
         }
+
+        public List<string> GetAllMsgsSent()
+        {
+            return new List<string>() {"Item with label Orange Juice expired."};
+        }
     }
 }
