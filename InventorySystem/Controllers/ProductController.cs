@@ -118,27 +118,4 @@ namespace InventorySystem.Controllers
             }
         }
     }
-
-    public class NotificationController : ApiController
-    {
-        private readonly IProductRepository _productRepository;
-
-        public NotificationController()
-            : this(new ProductRepository(HttpContext.Current, true))
-        { }
-
-        public NotificationController(IProductRepository productRepository)
-        {
-            _productRepository = productRepository;
-        }
-
-        public HttpResponseMessage Get()
-        {
-            var result = _productRepository.GetAllMsgsSent();
-
-            return Request.CreateResponse(HttpStatusCode.OK, result);
-        }
-
-    }
-
 }
