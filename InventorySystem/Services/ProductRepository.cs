@@ -15,6 +15,7 @@ namespace InventorySystem.Services
         public ProductRepository()
         {
             var expirationChecker = new Checker(CheckProductsForExpiration, 10);
+            expirationChecker.StartTimer();
         }
 
         public IEnumerable<Product> GetAllProducts()

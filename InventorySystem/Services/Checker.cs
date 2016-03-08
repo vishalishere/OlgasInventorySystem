@@ -10,6 +10,10 @@ namespace InventorySystem.Services
         {
             Timer.Elapsed += eh;
             Timer.Interval = howOftenToCheck;
+        }
+
+        public void StartTimer()
+        {
             Timer.Start();
         }
 
