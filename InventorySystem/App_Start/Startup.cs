@@ -1,4 +1,5 @@
-﻿using Microsoft.Owin;
+﻿using InventorySystem.Services;
+using Microsoft.Owin;
 using Owin;
 
 [assembly: OwinStartup(typeof(InventorySystem.App_Start.Startup))]

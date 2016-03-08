@@ -1,91 +1,82 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Dynamic;
-using System.IO;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Web;
 using InventorySystem.Models;
 using InventorySystem.Services;
-using Microsoft.AspNet.SignalR;
-using Microsoft.AspNet.SignalR.Hubs;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 
 namespace InventorySystem.Tests.DataRepository
 {
-    [TestClass]
+    [TestFixture]
     public class ProductRepositoryTest
     {
-        private readonly List<Product> _alcoholicBeverages = new List<Product> { new Product("Wine", "Drink", new DateTime(2017, 10, 5)) };
-        private readonly Product _updateTo = new Product("Milk", "Dairy", new DateTime(2017, 2, 2));
+        private readonly ProductRepository _productRepository = new ProductRepository();
+        private readonly List<Product> _products = new List<Product>() {new Product("Milk", "Drink", "11/1/2016"), new Product("Chips", "Snack", "12/1/2013")};
 
-        [TestMethod]
+        [Test]
         public void GetAllProducts()
         {
-            ProductRepository productRepository = GetProductRepository();
-            Assert.IsTrue(productRepository.GetAllProducts().Count() == 2);
+            Assert.IsEmpty(_productRepository.GetAllProducts());
         }
 
-        [TestMethod]
+        [Test]
         public void SaveProduct()
         {
-            ProductRepository productRepository = GetProductRepository();
-            var intialData = productRepository.GetAllData();
+            Assert.IsEmpty(_productRepository.GetAllProducts());
 
-            Assert.IsFalse(intialData.Any(x => x.Equals(_alcoholicBeverages.First())));
+            _productRepository.SaveProduct(_products);
+            var products = _productRepository.GetAllProducts();
+            Assert.That(products.Count() == 2);
+            Assert.That(products.ElementAt(0).Equals(_products[0]));
+            Assert.That(products.ElementAt(1).Equals(_products[1]));
 
-            productRepository.SaveProduct(_alcoholicBeverages);
-            var result = productRepository.GetAllData();
-
-            Assert.IsTrue(result.Any(x => x.Equals(_alcoholicBeverages.First())));
+            _productRepository.RemoveAllProducts();
         }
 
-        [TestMethod]
+        [Test]
         public void GetProductByLabel()
         {
-            ProductRepository productRepository = GetProductRepository();
-            var result = productRepository.GetProductByLabel("Milk");
-            Assert.IsTrue(result.First().Equals(new Product("Milk", "Drink", new DateTime(2017, 11, 5))));
+            Assert.IsEmpty(_productRepository.GetAllProducts());
 
+            _productRepository.SaveProduct(_products);
+            var product =_productRepository.GetProductByLabel("Milk");
+            Assert.That(product.Equals(_products.ElementAt(0)));
+
+            _productRepository.RemoveAllProducts();
         }
 
-        [TestMethod]
+        [Test]
         public void RemoveProduct()
         {
-            ProductRepository productRepository = GetProductRepository();
-            var initialData = productRepository.GetAllData();
-            Assert.IsTrue(initialData.Any(x => x.Label == "Milk"));
+            Assert.IsEmpty(_productRepository.GetAllProducts());
 
-            productRepository.RemoveProduct("Milk");
-            var result = productRepository.GetAllData();
+            _productRepository.SaveProduct(_products);
+            var products = _productRepository.GetAllProducts();
+            Assert.That(products.Count() == 2);
 
-            Assert.IsFalse(result.Any(x => x.Label == "Milk"));
+            _productRepository.RemoveProduct("Milk");
+            products = _productRepository.GetAllProducts();
+
+            Assert.That(products.Count() == 1);
+            Assert.False(products.Any(p=>p.Label == "Milk"));
+
+            _productRepository.RemoveAllProducts();
         }
 
-        [TestMethod]
+        [Test]
         public void UpdateProduct()
         {
-            ProductRepository productRepository = GetProductRepository();
-            var dataBeforeUpdate = productRepository.GetAllData();
-            Assert.IsFalse(dataBeforeUpdate.Any(x => x.Equals(_updateTo)));
+            Assert.IsEmpty(_productRepository.GetAllProducts());
+            _productRepository.SaveProduct(_products);
+            var products = _productRepository.GetAllProducts();
+            Assert.That(products.ElementAt(1).Label == "Chips");
+            Assert.That(products.ElementAt(1).Type == "Snack");
 
-            productRepository.UpdateProduct("milk", _updateTo);
-            var dataAfterUpdate = productRepository.GetAllData();
-            Assert.IsTrue(dataAfterUpdate.Any(x => x.Equals(_updateTo)));
+            var productToUpdateTo = new Product("Chips", "Junk", "2/3/2014");
+            _productRepository.UpdateProduct("Chips", productToUpdateTo);
+            Assert.That(_productRepository.GetProductByLabel("Chips").Equals(productToUpdateTo));
+
+            _productRepository.RemoveAllProducts();
         }
 
-        [TestMethod]
-        public void Notifications()
-        {
-            //use moq to checks whether clients are recieving the notifications
-        }
-
-        private static ProductRepository GetProductRepository()
-        {
-            HttpContext.Current = new HttpContext(
-                new HttpRequest("", "http://localhost:57016", ""),
-                new HttpResponse(new StringWriter())
-                );
-            return new ProductRepository(HttpContext.Current, false);
-        }
     }
 }

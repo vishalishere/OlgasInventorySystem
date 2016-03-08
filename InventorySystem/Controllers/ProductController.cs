@@ -1,49 +1,29 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Net.Http;
-using System.Web;
 using System.Web.Http;
-using System.Web.Http.Hosting;
 using InventorySystem.Models;
 using InventorySystem.Services;
 using Newtonsoft.Json;
-using SignalR;
 
 namespace InventorySystem.Controllers
 {
     public class ProductController : ApiController
     {
-        private readonly IProductRepository _productRepository;
-
-        public ProductController()
-            : this(new ProductRepository(HttpContext.Current, true))
-        {
-        }
-
-        public ProductController(IProductRepository productRepository)
-        {
-            _productRepository = productRepository;
-        }
+        private readonly ProductRepository _productRepository = new ProductRepository();
 
         // GET api/products
         public HttpResponseMessage Get()
         {
-            var products = _productRepository.GetAllProducts();
-            CheckRequestIsNotNull();
-
-            return Request.CreateResponse(HttpStatusCode.OK, products);
-
+            return Request.CreateResponse(HttpStatusCode.OK, _productRepository.GetAllProducts());
         }
 
         // GET api/products/Milk
         public HttpResponseMessage Get(string id)
         {
-            var products = _productRepository.GetProductByLabel(id);
+            var product = _productRepository.GetProductByLabel(id);
 
-            CheckRequestIsNotNull();
-
-            var response = products.ToList().Count == 0 ? Request.CreateResponse(HttpStatusCode.NotFound, "The item could not be found.") : Request.CreateResponse(HttpStatusCode.OK, products);
+            var response = product == null ? Request.CreateResponse(HttpStatusCode.NotFound, "The item could not be found.") : Request.CreateResponse(HttpStatusCode.OK, product);
             
             return response;
         }
@@ -56,17 +36,14 @@ namespace InventorySystem.Controllers
 
             IEnumerable<Product> products = JsonConvert.DeserializeObject<IEnumerable<Product>>(jsonContent);
             var result = _productRepository.SaveProduct(products);
-            CheckRequestIsNotNull();
-            var resultMsg = result ? Request.CreateResponse(HttpStatusCode.Created, products) : Request.CreateResponse(HttpStatusCode.InternalServerError, string.Format("Product {0} could not be added.", productsMsg));
-            
-            return resultMsg;
+
+            return result ? Request.CreateResponse(HttpStatusCode.Created, products) : Request.CreateResponse(HttpStatusCode.InternalServerError, string.Format("Product {0} could not be added.", productsMsg));
         }
 
         // PUT api/products/milk
         public HttpResponseMessage Put(string id, Product value)
         {
             HttpResponseMessage response;
-            CheckRequestIsNotNull();
 
             var msg = Get(id);
 
@@ -89,7 +66,6 @@ namespace InventorySystem.Controllers
         public HttpResponseMessage Delete(string id)
         {
             HttpResponseMessage response;
-            CheckRequestIsNotNull();
 
             var msg = Get(id);
 
@@ -97,7 +73,6 @@ namespace InventorySystem.Controllers
                 response = msg;
             else if (_productRepository.RemoveProduct(id))
             {
-
                 response = Request.CreateResponse(HttpStatusCode.OK, string.Format("Products with label {0} have been deleted.", id));
             }
             else
@@ -107,15 +82,6 @@ namespace InventorySystem.Controllers
             }
 
             return response;
-        }
-        
-        private void CheckRequestIsNotNull()
-        {
-            if (Request == null)
-            {
-                Request = new HttpRequestMessage();
-                Request.Properties.Add(HttpPropertyKeys.HttpConfigurationKey, new HttpConfiguration());
-            }
         }
     }
 }

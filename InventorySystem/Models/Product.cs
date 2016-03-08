@@ -1,22 +1,23 @@
 ﻿using System;
-using InventorySystem.Controllers;
-using Microsoft.AspNet.SignalR;
 
 namespace InventorySystem.Models
 {
     public class Product
     {
+        public const string ExpiredMessage = "Product expired";
+        public const string FreshMessage = "Product is fresh";
+
         public string Label { get; set; }
         public string Type { get; set; }
         public string Expiration { get; set; }
         public string Notification { get; set; }
 
-        public Product(string label, string type, DateTime expiration)
+        public Product(string label, string type, string expiration)
         {
             Label = label;
             Type = type;
-            Expiration = expiration.ToShortDateString();
-            Notification = expiration < DateTime.Now ? "Product expired" : "Product is fresh";
+            Expiration = expiration;
+            Notification = DateTime.Parse(Expiration) < DateTime.Now ? ExpiredMessage : FreshMessage;
         }
 
         public bool Equals(Product anotherProduct)
