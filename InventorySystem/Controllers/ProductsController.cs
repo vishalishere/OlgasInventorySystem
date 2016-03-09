@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Web.Http;
@@ -23,11 +24,24 @@ namespace InventorySystem.Controllers
         {
             HttpContent requestContent = productsMsg.Content;
             string jsonContent = requestContent.ReadAsStringAsync().Result;
+
             IEnumerable<Product> products = JsonConvert.DeserializeObject<IEnumerable<Product>>(jsonContent);
 
-            var result = _productRepository.SaveProduct(products);
-
-            return result ? Request.CreateResponse(HttpStatusCode.Created, products) : Request.CreateResponse(HttpStatusCode.InternalServerError, string.Format("Product {0} could not be added.", productsMsg));
+            try
+            {
+                _productRepository.SaveProduct(products);
+                return Request.CreateResponse(HttpStatusCode.Created, products);
+            }
+            catch (KnownException e)
+            {
+                return Request.CreateResponse(HttpStatusCode.InternalServerError, e.ErrorMessage);
+            }
+            catch (Exception e)
+            {
+                //logger.Log(e)
+                return Request.CreateResponse(HttpStatusCode.InternalServerError,
+                    "Something went wrong.");
+            }
         }
 
     }

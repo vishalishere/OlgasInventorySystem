@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Web.Http;
@@ -35,53 +36,72 @@ namespace InventorySystem.Controllers
             string jsonContent = requestContent.ReadAsStringAsync().Result;
 
             IEnumerable<Product> products = JsonConvert.DeserializeObject<IEnumerable<Product>>(jsonContent);
-            var result = _productRepository.SaveProduct(products);
 
-            return result ? Request.CreateResponse(HttpStatusCode.Created, products) : Request.CreateResponse(HttpStatusCode.InternalServerError, string.Format("Product {0} could not be added.", productsMsg));
+            try
+            {
+                _productRepository.SaveProduct(products);
+                return Request.CreateResponse(HttpStatusCode.Created, products);
+            }
+            catch (KnownException e)
+            {
+                return Request.CreateResponse(HttpStatusCode.InternalServerError, e.ErrorMessage);
+            }
+            catch (Exception e)
+            {
+                //logger.Log(e)
+                return Request.CreateResponse(HttpStatusCode.InternalServerError,
+                    "Something went wrong.");
+            }
         }
 
         // PUT api/products/milk
         public HttpResponseMessage Put(string id, Product value)
         {
-            HttpResponseMessage response;
-
             var msg = Get(id);
 
             if (msg.StatusCode == HttpStatusCode.NotFound)
-                response = msg;
-            else if (_productRepository.UpdateProduct(id, value))
+                return msg;
+            try
             {
-                response = Request.CreateResponse(HttpStatusCode.OK, string.Format("Products with label {0} has been updated.", id));
-            }
-            else
-            {
-                response = Request.CreateResponse(HttpStatusCode.InternalServerError,
-                    string.Format("Products with label {0} could not be updated.", id));
-            }
+                _productRepository.UpdateProduct(id, value);
+                return Request.CreateResponse(HttpStatusCode.OK, string.Format("Products with label {0} has been updated.", id));
 
-            return response;
+            }
+            catch(KnownException e)
+            {
+                return Request.CreateResponse(HttpStatusCode.InternalServerError, e.ErrorMessage);
+            }
+            catch (Exception e)
+            {
+                //logger.Log(e)
+                return Request.CreateResponse(HttpStatusCode.InternalServerError,
+                    "Something went wrong.");
+            }
+            
         }
 
         // DELETE api/products/milk
         public HttpResponseMessage Delete(string id)
         {
-            HttpResponseMessage response;
-
             var msg = Get(id);
 
             if (msg.StatusCode == HttpStatusCode.NotFound)
-                response = msg;
-            else if (_productRepository.RemoveProduct(id))
+                return msg;
+            try
             {
-                response = Request.CreateResponse(HttpStatusCode.OK, string.Format("Products with label {0} have been deleted.", id));
+                _productRepository.RemoveProduct(id);
+                return Request.CreateResponse(HttpStatusCode.OK, string.Format("Products with label {0} have been deleted.", id));
             }
-            else
+            catch(KnownException e)
             {
-                response = Request.CreateResponse(HttpStatusCode.InternalServerError,
-                    string.Format("Products with label {0} could not be deleted.", id));
+                return Request.CreateResponse(HttpStatusCode.InternalServerError, e.ErrorMessage);
             }
-
-            return response;
+            catch (Exception e)
+            {
+                //logger.Log(e)
+                return Request.CreateResponse(HttpStatusCode.InternalServerError,
+                    "Something went wrong.");
+            }
         }
     }
 }

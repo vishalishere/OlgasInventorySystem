@@ -1913,7 +1913,7 @@
                         }
                     }
                     catch (e) {
-                        connection.log("Error occured when stopping foreverFrame transport. Message = " + e.message + ".");
+                        connection.log("Error occured when stopping foreverFrame transport. errorMessage = " + e.message + ".");
                     }
                 }
                 $(connection.frame).remove();

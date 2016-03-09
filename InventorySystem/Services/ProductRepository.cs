@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Timers;
+using InventorySystem.Controllers;
 using InventorySystem.Models;
 
 namespace InventorySystem.Services
@@ -23,15 +24,24 @@ namespace InventorySystem.Services
             return Data.Values;
         }
 
-        public bool SaveProduct(IEnumerable<Product> productsToSave)
+        public void SaveProduct(IEnumerable<Product> productsToSave)
         {
-            bool isSuccess = true;
+            var failedProducts = new List<string>();
             foreach (var product in productsToSave)
             {
                 product.Notification = DateTime.Parse(product.Expiration) < DateTime.Now ? Product.ExpiredMessage : Product.FreshMessage;
-                isSuccess = Data.TryAdd(product.Label, product);
+                if (!Data.TryAdd(product.Label, product))
+                    failedProducts.Add(product.Label);
             }
-            return isSuccess;
+
+            if (failedProducts.Count > 0)
+            {
+                var unsuccessfulProducts = failedProducts.Aggregate(string.Empty, (current, failedProduct) => current + failedProduct + ", ");
+                unsuccessfulProducts = unsuccessfulProducts.Remove(unsuccessfulProducts.Length - 2);
+
+                throw new KnownException(string.Format("Products with labels {0} could not be saved.", unsuccessfulProducts));
+            }
+
         }
 
         public Product GetProductByLabel(string label)
@@ -41,15 +51,14 @@ namespace InventorySystem.Services
             return null;
         }
 
-        public bool RemoveProduct(string label)
+        public void RemoveProduct(string label)
         {
             Product product;
-            var isSuccess = Data.TryRemove(label, out product);
-            
-            if(isSuccess)
-                Notification.SendMessage(string.Format("Product with label {0} was deleted.", label));
 
-            return isSuccess;
+            if (Data.TryRemove(label, out product))
+                Notification.SendMessage(string.Format("Product with label {0} was deleted.", label));
+            else
+                throw new KnownException(string.Format("Product with label {0} could not be removed", label));
         }
 
         public void RemoveAllProducts()
@@ -57,7 +66,7 @@ namespace InventorySystem.Services
             Data.Clear();
         }
 
-        public bool UpdateProduct(string label, Product updateTo)
+        public void UpdateProduct(string label, Product updateTo)
         {
             try
             {
@@ -74,12 +83,10 @@ namespace InventorySystem.Services
                         ? Product.ExpiredMessage
                         : Product.FreshMessage;
                 }
-                return true;
             }
-            catch(Exception ex)
+            catch(Exception e)
             {
-                Console.WriteLine(ex.ToString());
-                return false;
+                throw new KnownException(string.Format("Product with label {0} could not be updated", label));
             }
         }
 
